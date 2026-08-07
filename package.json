@@ -10,9 +10,10 @@
   },
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev.mjs",
+    "dev:ext": "vite",
     "build": "tsc --noEmit && vite build",
-    "pack": "npm run build && rm -f pagehand.zip && cd dist && zip -r ../pagehand.zip .",
+    "pack": "PAGEHAND_STORE_BUILD=true npm run build && rm -f pagehand.zip && cd dist && zip -r ../pagehand.zip .",
     "store:shots": "node store/render-screenshots.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src e2e",

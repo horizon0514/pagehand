@@ -8,6 +8,12 @@ node_modules/
 .env.*.local
 .env*.local*
 
+# The private half of the development signing key. Only the public half is
+# needed to pin the extension id (it lives in manifest.config.ts), so losing
+# this file costs nothing — but committing it would let anyone sign a build
+# that claims the same id.
+dev-key.pem
+
 dist/
 dist-*/
 pagehand.zip

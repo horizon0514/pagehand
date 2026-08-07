@@ -16,6 +16,38 @@ test('loads with a registered service worker and the expected manifest', async (
   expect(manifest.side_panel?.default_path).toContain('sidepanel');
 });
 
+/**
+ * Sign-in ends with the page the emailed link opened calling
+ * `chrome.runtime.sendMessage`, which exists only on origins the manifest lists
+ * under `externally_connectable`. A development build lists localhost so the
+ * whole flow can run against a local cloud/ — and whether Chrome honoured that
+ * pattern cannot be read off the manifest, since getManifest() echoes back what
+ * was written rather than what was accepted. Only a page can answer it.
+ *
+ * The distinction that makes this worth a test: `http://localhost:3000/*` is
+ * accepted into the manifest and matches nothing, because match patterns have
+ * no ports. Portless is the whole trick, and nothing else would notice it
+ * breaking.
+ */
+test('a local page can reach the extension, which is what local sign-in needs', async ({
+  context,
+  panel,
+}) => {
+  const matches = await panel.evaluate(
+    () => chrome.runtime.getManifest().externally_connectable?.matches ?? [],
+  );
+  expect(matches).toContain('http://localhost/*');
+
+  const page = await context.newPage();
+  await page.goto('/page.html');
+  const reachable = await page.evaluate(
+    () =>
+      typeof (globalThis as { chrome?: { runtime?: { sendMessage?: unknown } } }).chrome?.runtime
+        ?.sendMessage === 'function',
+  );
+  expect(reachable).toBe(true);
+});
+
 test('side panel renders without console errors', async ({ context, extensionId }) => {
   const page = await context.newPage();
   const errors: string[] = [];

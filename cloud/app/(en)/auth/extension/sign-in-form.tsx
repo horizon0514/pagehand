@@ -19,7 +19,15 @@ import { supabaseBrowser } from '@/lib/supabase-browser';
  * serve.
  */
 
-type Phase = 'idle' | 'sending' | 'sent' | 'delivering' | 'done' | 'unreachable' | 'id-mismatch';
+type Phase =
+  | 'idle'
+  | 'sending'
+  | 'sent'
+  | 'delivering'
+  | 'done'
+  | 'unreachable'
+  | 'id-mismatch'
+  | 'refused';
 
 export function SignInForm() {
   const [email, setEmail] = useState('');
@@ -95,6 +103,20 @@ export function SignInForm() {
           Signing in worked and the extension is reachable, but its id isn’t one this site knows.
           That happens with an unpacked build, whose id comes from the folder it was loaded from.
           Check the id at <code>chrome://extensions</code>.
+        </p>
+      </>
+    );
+  }
+
+  if (phase === 'refused') {
+    return (
+      <>
+        <h2>Almost there</h2>
+        <p>
+          The extension is installed and answered, but it turned this session down — it is pointed
+          at a different server than the one that issued it. A development build talks to a local{' '}
+          <code>cloud/</code>, so it only accepts a sign-in that started there. Finish signing in on{' '}
+          <code>http://localhost:3000</code>, or load a build that points at this site.
         </p>
       </>
     );
