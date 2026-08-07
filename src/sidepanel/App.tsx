@@ -7,6 +7,10 @@ import ChatThread, { EmptyIntro, EmptySuggestions } from './components/ChatThrea
 import SettingsPanel from './components/SettingsPanel';
 import BoundTabBar from './components/BoundTabBar';
 import LedgerPanel from './components/LedgerPanel';
+import ExportChip from './components/ExportChip';
+import ResultBar from './components/ResultBar';
+import ExportTaskList from './components/ExportTaskList';
+import { useExportTasks } from './hooks/useExportTasks';
 import { useLedger } from './hooks/useLedger';
 import ThreadSwitcher from './components/ThreadSwitcher';
 import TabMentionMenu from './components/TabMentionMenu';
@@ -230,6 +234,7 @@ export default function App() {
   const [input, setInput] = useState('');
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const ledger = useLedger(threadId);
+  const exportTasks = useExportTasks();
   const { needsSignIn } = useHostedAuth(settings);
 
   useEffect(() => {
@@ -326,12 +331,16 @@ export default function App() {
       ) : (
         <>
           <BoundTabBar />
-          <LedgerPanel ledger={ledger} />
+          <LedgerPanel ledger={ledger} onSaveTask={(n, e, k) => void exportTasks.save(n, e, k)} />
 
           {isEmpty ? (
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 overflow-y-auto px-3 py-6">
               <EmptyIntro />
               <div className="w-full">
+                {/* Also here: re-running a saved task fills the ledger without
+                    sending a message, so the thread stays "empty" while holding
+                    a finished table. */}
+                {ledger && ledger.findings.length > 0 && <ResultBar ledger={ledger} />}
                 <Composer
                   input={input}
                   setInput={setInput}
@@ -347,6 +356,23 @@ export default function App() {
               {/* Hidden rather than inert: a row of one-click prompts that
                   quietly do nothing is a worse answer than not offering them. */}
               {!needsSignIn && <EmptySuggestions onPick={pickSuggestion} />}
+              {/* Re-running a saved export needs no model, so it is offered
+                  whether or not the account can send a message. */}
+              <ExportTaskList
+                tasks={exportTasks.tasks}
+                runningId={exportTasks.runningId}
+                disabled={isStreaming}
+                onRun={(task) => void exportTasks.run(task)}
+                onDelete={(id) => void exportTasks.remove(id)}
+              />
+              {exportTasks.outcome && (
+                <p
+                  role="status"
+                  className="w-full max-w-[320px] text-center text-[11px] leading-[1.5] text-fg-tertiary"
+                >
+                  {t(exportTasks.outcome.key, exportTasks.outcome.vars)}
+                </p>
+              )}
             </div>
           ) : (
             <div className="relative flex min-h-0 flex-1 flex-col">
@@ -357,6 +383,13 @@ export default function App() {
               />
               <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-bg from-40% via-bg/85 to-transparent px-3 pt-10 pb-3">
                 <div className="pointer-events-auto w-full">
+                  {/* Once there are rows, offering "export this list" again is
+                      noise — what is wanted is the result. */}
+                  {ledger && ledger.findings.length > 0 ? (
+                    <ResultBar ledger={ledger} />
+                  ) : (
+                    <ExportChip disabled={isStreaming || needsSignIn} onPick={pickSuggestion} />
+                  )}
                   <Composer
                     input={input}
                     setInput={setInput}

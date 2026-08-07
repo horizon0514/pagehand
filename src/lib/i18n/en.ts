@@ -21,11 +21,11 @@ export const en = {
 
   // Empty state
   'empty.title': 'Ask about this page',
-  'empty.body': 'Read the DOM, inspect console and network, or drive the page with clicks and typing.',
+  'empty.body': 'Export any list as a spreadsheet — plus read the DOM, inspect console and network, or drive the page with clicks and typing.',
   'empty.tryOne': 'Try one',
+  'empty.suggest.exportTable': 'Export this list as a table',
   'empty.suggest.summarize': 'Summarize this page',
   'empty.suggest.clickLogin': 'Click the login button',
-  'empty.suggest.console': 'What errors are in the console?',
 
   // Threads
   'thread.newChat': 'New chat',
@@ -134,17 +134,40 @@ export const en = {
   'settings.close': 'Close settings',
   'settings.permissionDenied': "Permission for {origin} was not granted — can't use this endpoint.",
 
+  // Export
+  'export.chip': 'Export this list',
+  'export.chipRows': '~{count} rows',
+  'export.prompt':
+    'Export the list on this page as a table: work out the columns, then walk the pagination and ' +
+    'collect every row. When you are done, just tell me how many rows you got — do not repeat them back.',
+
   // Task ledger
+  'result.ready': '{count} rows ready',
   'ledger.title': 'Task ledger',
   'ledger.planProgress': '{done}/{total} steps',
-  'ledger.findingsCount': '{count} findings',
+  'ledger.rowsCount': '{count} rows',
   'ledger.plan': 'Plan',
   'ledger.findings': 'Findings',
   'ledger.notes': 'Handoff notes',
-  'ledger.copy': 'Copy findings as Markdown',
-  'ledger.copied': 'Copied',
+  'ledger.copy': 'Copy as Markdown',
+  'ledger.copyTable': 'Copy as a table (paste into Excel or a sheet)',
+  'ledger.downloadCsv': 'Download CSV (opens in Excel or WPS)',
+  'ledger.downloadCsvShort': 'Excel / CSV',
+  'ledger.saveTask': 'Save as a repeatable task',
+  'ledger.rowsHidden': '{count} more rows — export to see them all',
   'ledger.expand': 'Show task ledger',
   'ledger.collapse': 'Hide task ledger',
+
+  // Saved export tasks
+  'tasks.title': 'Saved exports',
+  'tasks.run': 'Run “{name}” again',
+  'tasks.running': 'running…',
+  'tasks.lastRun': '{count} rows · {host}',
+  'tasks.delete': 'Delete this saved export',
+  'tasks.doneFirst': 'Collected {count} rows. The next run will report what changed.',
+  'tasks.doneNew': 'Collected {count} rows — {added} new since the last run.',
+  'tasks.doneSame': 'Collected {count} rows — nothing new since the last run.',
+  'tasks.failed': 'Re-run failed: {error}',
 
   // Context menus (also used from the background service worker)
   'menu.askPage': 'Ask AI about this page',
