@@ -12,6 +12,7 @@ import {
   MAX_PLAN_ITEMS,
   MAX_PLAN_TEXT_CHARS,
   type Finding,
+  type LedgerExtraction,
   type PlanItem,
   type TaskLedger,
 } from './types';
@@ -92,7 +93,10 @@ export type LedgerMutation =
       };
     }
   | { type: 'remove_finding'; key: string; reason: string }
-  | { type: 'add_note'; text: string };
+  | { type: 'add_note'; text: string }
+  // Not reachable from update_task_ledger — ledgerTools declares the model's
+  // mutation union separately, and this one is written by extract_rows.
+  | { type: 'set_extraction'; extraction: LedgerExtraction };
 
 /**
  * Apply a heterogeneous batch atomically. The model gets one stable task-state
@@ -175,6 +179,9 @@ export async function applyLedgerMutations(mutations: LedgerMutation[]): Promise
           ...next,
           notes: [...next.notes, clamp(mutation.text, MAX_NOTE_CHARS)].slice(-MAX_NOTES),
         };
+        break;
+      case 'set_extraction':
+        next = { ...next, extraction: mutation.extraction };
         break;
     }
   }
