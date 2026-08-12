@@ -104,6 +104,15 @@ export default defineManifest({
           'https://api.deepseek.com/*',
           'https://api.openai.com/*',
           'https://api.anthropic.com/*',
+          // web_search, which is not something a user can be asked to approve
+          // at the moment it happens: a tool call carries no user gesture, so
+          // chrome.permissions.request() would throw rather than prompt. Both
+          // Bing hosts are needed — www redirects to the regional host, and a
+          // redirect the manifest doesn't cover is blocked like any other
+          // request. Firecrawl is only reached when the user configured a key.
+          'https://www.bing.com/*',
+          'https://cn.bing.com/*',
+          'https://api.firecrawl.dev/*',
         ],
       }),
   // The sign-in page posts the finished session here. Chrome enforces this

@@ -87,10 +87,11 @@ met — measured against its success criterion — call control_task with type c
 for one context, call control_task with type start_episode and one bounded objective, but only after you
 have initialized the ledger. If you get stuck, do not repeat the same action hoping for a different result:
 change approach, and if a whole strategy is exhausted, say what's blocking you and stop.
-To search the web, use the web_search tool rather than navigating to a search engine and reading the page:
-it returns clean ranked results. Pass concise keywords, not the raw question, and if results are poor,
-reformulate with different terms rather than retrying the same query. Then navigate_page to a promising
-result and extract_content to read it.`;
+To search the web, use the web_search tool rather than navigating to a search engine and reading the page.
+Pass the information need in plain language — it plans several keyword queries from it, runs them at once,
+and merges the rankings, so do not pre-chew it into keywords yourself. When the results miss, pass explicit
+"queries" (a site: filter, an exact phrase, another language) rather than repeating the same need. Then
+navigate_page to a promising result and extract_content to read it.`;
 
 const EPISODE_PROMPT = `${SYSTEM_PROMPT}
 

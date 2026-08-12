@@ -128,6 +128,10 @@ export const en = {
   'settings.baseUrlHint.deepseek': 'Empty → {url}. Custom hosts need a one-time permission.',
   'settings.baseUrlHint.openai': 'Must expose /responses. Custom hosts need a one-time permission.',
   'settings.baseUrlHint.other': 'OpenRouter, Azure, Ollama, etc. — needs a one-time permission.',
+  'settings.sectionSearch': 'Web search',
+  'settings.searchKey': 'Firecrawl API key',
+  'settings.searchKeyHint':
+    'Sharper results for web_search. Leave empty and search still works, via Bing.',
   'settings.save': 'Save',
   'settings.saving': 'Saving…',
   'settings.cancel': 'Cancel',
