@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { ArrowUpRight, FileText, MousePointer2, TerminalSquare } from 'lucide-react';
+import { ArrowUpRight, FileText, MousePointer2, TableProperties } from 'lucide-react';
 import { DisplayMessage } from '../state/conversationStore';
 import { useT } from '../i18n/useT';
 import type { MessageKey } from '../../lib/i18n';
@@ -7,10 +7,18 @@ import MessageBubble from './MessageBubble';
 import BrandMark from './BrandMark';
 import { SectionLabel } from './ui/label';
 
-const SUGGESTIONS: { icon: typeof FileText; key: MessageKey }[] = [
+/**
+ * Export leads: it is the one job here that no chat assistant with web access
+ * can do for you, because it needs the session you are already signed into.
+ *
+ * `promptKey` exists for it too — a chip has room for three words and the
+ * instruction that actually produces a clean export is a sentence, so what is
+ * shown and what is sent come apart here.
+ */
+const SUGGESTIONS: { icon: typeof FileText; key: MessageKey; promptKey?: MessageKey }[] = [
+  { icon: TableProperties, key: 'empty.suggest.exportTable', promptKey: 'export.prompt' },
   { icon: FileText, key: 'empty.suggest.summarize' },
   { icon: MousePointer2, key: 'empty.suggest.clickLogin' },
-  { icon: TerminalSquare, key: 'empty.suggest.console' },
 ];
 
 export function EmptyIntro() {
@@ -33,13 +41,13 @@ export function EmptySuggestions({ onPick }: { onPick: (text: string) => void })
     <div className="animate-enter w-full max-w-[320px]">
       <SectionLabel className="mb-2 text-center">{t('empty.tryOne')}</SectionLabel>
       <div className="flex flex-col gap-1.5">
-        {SUGGESTIONS.map(({ icon: Icon, key }) => {
+        {SUGGESTIONS.map(({ icon: Icon, key, promptKey }) => {
           const text = t(key);
           return (
             <button
               key={key}
               type="button"
-              onClick={() => onPick(text)}
+              onClick={() => onPick(promptKey ? t(promptKey) : text)}
               className="group flex h-9 cursor-pointer items-center gap-2.5 rounded-lg border border-line bg-surface px-3 text-left text-[12.5px] text-fg-secondary outline-none transition-[background-color,border-color,color] duration-200 hover:border-line-strong hover:bg-surface-hover hover:text-fg focus-visible:ring-2 focus-visible:ring-accent-line"
             >
               <span className="grid size-6 shrink-0 place-items-center rounded-md bg-bg text-fg-tertiary transition-colors duration-200 group-hover:bg-accent-soft group-hover:text-accent-text">

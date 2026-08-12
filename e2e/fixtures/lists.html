@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <title>pagehand e2e competing lists</title>
+  </head>
+  <body>
+    <!--
+      Three repeating structures, only one of which anyone would want to export.
+      The nav is the classic false positive — plenty of repeats, same shape, no
+      data. The tag list inside the first order is the other one: real content,
+      but a level below the records, the way a thread's messages sit below an
+      inbox. Whether the probe can tell these apart is the whole question.
+    -->
+    <nav aria-label="主导航">
+      <ul id="nav-links">
+        <li class="nav-item"><a href="/home">首页导航链接</a></li>
+        <li class="nav-item"><a href="/orders">订单导航链接</a></li>
+        <li class="nav-item"><a href="/goods">商品导航链接</a></li>
+        <li class="nav-item"><a href="/stats">统计导航链接</a></li>
+        <li class="nav-item"><a href="/help">帮助导航链接</a></li>
+        <li class="nav-item"><a href="/about">关于导航链接</a></li>
+      </ul>
+    </nav>
+
+    <main>
+      <h2>订单列表</h2>
+      <ul id="orders"></ul>
+    </main>
+
+    <footer>
+      <ul id="footer-links">
+        <li class="foot"><a href="/tos">服务条款页面链接</a></li>
+        <li class="foot"><a href="/privacy">隐私政策页面链接</a></li>
+        <li class="foot"><a href="/contact">联系我们页面链接</a></li>
+        <li class="foot"><a href="/jobs">加入我们页面链接</a></li>
+      </ul>
+    </footer>
+
+    <script>
+      (() => {
+        const orders = Array.from({ length: 8 }, (_, i) => {
+          const n = i + 1;
+          return {
+            id: `SO-2026-${String(n).padStart(3, '0')}`,
+            buyer: `买家${String(n).padStart(2, '0')}`,
+            amount: n % 3 === 0 ? 980 : 240,
+          };
+        });
+
+        // Only the first order carries the nested tag list — enough to be found
+        // as a candidate, not enough to outscore the orders themselves.
+        const tags = ['加急处理·优先发货', '已开具增值税发票', '需要客服电话回访', '大客户专属订单'];
+
+        document.getElementById('orders').innerHTML = orders
+          .map(
+            (o, i) => `
+          <li class="order-row">
+            <a class="order-id" href="/orders/${o.id}">${o.id}</a>
+            <span class="buyer">${o.buyer}</span>
+            <span class="amount">¥${o.amount}</span>
+            ${
+              i === 0
+                ? `<ul class="tags">${tags
+                    .map((t) => `<li class="tag"><span class="tag-name">${t}</span></li>`)
+                    .join('')}</ul>`
+                : ''
+            }
+          </li>`,
+          )
+          .join('');
+      })();
+    </script>
+  </body>
+</html>

@@ -30,7 +30,7 @@ export async function listPages(): Promise<PageInfo[]> {
   return tabs.map(toPageInfo).filter((p): p is PageInfo => p !== null);
 }
 
-function waitForTabComplete(tabId: number, timeout = 15_000): Promise<void> {
+export function waitForTabComplete(tabId: number, timeout = 15_000): Promise<void> {
   return new Promise((resolve) => {
     let settled = false;
     const finish = () => {

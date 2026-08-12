@@ -33,6 +33,13 @@ export const SettingsSchema = z.object({
   model: z.string().min(1),
   baseURL: z.string().url().optional(),
   temperature: z.number().min(0).max(2).optional(),
+  /**
+   * Optional, and orthogonal to `provider`: web search is a different vendor
+   * from the model, so a hosted user may still bring their own search key and a
+   * BYOK user may leave it empty. Empty is not a broken setup — search falls
+   * back to keyless Bing (see search/runSearch.ts).
+   */
+  firecrawlApiKey: z.string().optional(),
 });
 export type Settings = z.infer<typeof SettingsSchema>;
 

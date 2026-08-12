@@ -7,12 +7,15 @@ import { list_console_messages, get_console_message } from './consoleTools';
 import { list_network_requests, get_network_request } from './networkTools';
 import { update_task_ledger } from './ledgerTools';
 import { extract_content } from './extractTool';
+import { infer_row_schema, extract_rows } from './tableTools';
 import { web_search } from './searchTool';
 import { control_task, CONTROL_TASK_TOOL } from './controlTools';
 
 export const tools = {
   take_snapshot,
   extract_content,
+  infer_row_schema,
+  extract_rows,
   web_search,
   click,
   hover,

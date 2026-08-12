@@ -12,6 +12,7 @@ export interface StoredLedger {
   plan: { text: string; status: string }[];
   findings: { key: string; summary: string; data?: Record<string, unknown> }[];
   notes: string[];
+  extraction?: { url: string; schema: { rowSelector: string; keyField: string } };
 }
 
 /** Mirrors StopInfo in lib/llm/agentLoop — how a turn ended. */
@@ -47,6 +48,29 @@ export interface CdpTestApi {
     activate(threadId: string): Promise<StoredLedger>;
     get(): StoredLedger | null;
   };
+  tasks: {
+    list(): Promise<StoredTask[]>;
+    remove(id: string): Promise<StoredTask[]>;
+    run(task: StoredTask): Promise<StoredTaskRun>;
+    saveCurrent(name: string): Promise<StoredTask[]>;
+  };
+}
+
+export interface StoredTask {
+  id: string;
+  name: string;
+  url: string;
+  lastRunAt: number | null;
+  lastRowCount: number;
+  lastKeys: string[];
+}
+
+export interface StoredTaskRun {
+  rows: number;
+  pagesVisited: number;
+  stopReason: string;
+  newKeys: string[];
+  firstRun: boolean;
 }
 
 declare global {

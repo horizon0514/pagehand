@@ -1,5 +1,5 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react';
-import { Eye, EyeOff, KeyRound, Languages, Sparkles, X } from 'lucide-react';
+import { Eye, EyeOff, KeyRound, Languages, Search, Sparkles, X } from 'lucide-react';
 import {
   Settings,
   ProviderId,
@@ -37,6 +37,9 @@ const DEFAULT_HOST_ORIGINS = new Set([
   'https://api.openai.com',
   'https://api.anthropic.com',
   'https://api.deepseek.com',
+  'https://www.bing.com',
+  'https://cn.bing.com',
+  'https://api.firecrawl.dev',
 ]);
 
 interface Props {
@@ -93,6 +96,23 @@ function CloseButton({ onClose }: { onClose: () => void }) {
     >
       <X className="size-3.5" />
     </Button>
+  );
+}
+
+/** The eye on a secret field. Two fields hold keys now, and neither should be
+ * the one that renders the toggle differently. */
+function RevealToggle({ shown, onToggle }: { shown: boolean; onToggle: () => void }) {
+  const { t } = useI18n();
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="grid size-6 cursor-pointer place-items-center rounded-md text-fg-tertiary outline-none transition-colors duration-200 hover:bg-surface-hover hover:text-fg focus-visible:ring-2 focus-visible:ring-accent-line"
+      aria-label={shown ? t('settings.hideKey') : t('settings.showKey')}
+      title={shown ? t('settings.hideKey') : t('settings.showKey')}
+    >
+      {shown ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+    </button>
   );
 }
 
@@ -159,7 +179,9 @@ export default function SettingsPanel({ initial, onSave, onClose }: Props) {
   const [apiKey, setApiKey] = useState(initial?.apiKey ?? '');
   const [model, setModel] = useState(initial?.model ?? DEFAULT_MODELS[DEFAULT_BYOK_PROVIDER]);
   const [baseURL, setBaseURL] = useState(initial?.baseURL ?? '');
+  const [firecrawlApiKey, setFirecrawlApiKey] = useState(initial?.firecrawlApiKey ?? '');
   const [showKey, setShowKey] = useState(false);
+  const [showSearchKey, setShowSearchKey] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -199,8 +221,14 @@ export default function SettingsPanel({ initial, onSave, onClose }: Props) {
   /** Hosted has no other input, so signing in *is* completing setup. Persisted
    * without closing the panel: the user still sees the result of what they did. */
   const persistHosted = useCallback(() => {
-    void onSave({ provider: 'hosted', model: HOSTED_MODELS[0] });
-  }, [onSave]);
+    // Carries the search key through: it belongs to no provider, so signing in
+    // must not quietly drop one the user already entered.
+    void onSave({
+      provider: 'hosted',
+      model: HOSTED_MODELS[0],
+      firecrawlApiKey: firecrawlApiKey.trim() || undefined,
+    });
+  }, [onSave, firecrawlApiKey]);
 
   const signIn = useSignIn(persistHosted);
   const signedIn = signIn.session !== null;
@@ -224,6 +252,7 @@ export default function SettingsPanel({ initial, onSave, onClose }: Props) {
         apiKey: hosted ? undefined : apiKey.trim(),
         model: hosted ? hostedModel : model.trim(),
         baseURL: trimmedBaseURL,
+        firecrawlApiKey: firecrawlApiKey.trim() || undefined,
       });
       onClose();
     } catch (err) {
@@ -305,17 +334,7 @@ export default function SettingsPanel({ initial, onSave, onClose }: Props) {
               label={t('settings.apiKey')}
               hint={t('settings.apiKeyHint')}
               htmlFor="apiKey"
-              trailing={
-                <button
-                  type="button"
-                  onClick={() => setShowKey((v) => !v)}
-                  className="grid size-6 cursor-pointer place-items-center rounded-md text-fg-tertiary outline-none transition-colors duration-200 hover:bg-surface-hover hover:text-fg focus-visible:ring-2 focus-visible:ring-accent-line"
-                  aria-label={showKey ? t('settings.hideKey') : t('settings.showKey')}
-                  title={showKey ? t('settings.hideKey') : t('settings.showKey')}
-                >
-                  {showKey ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-                </button>
-              }
+              trailing={<RevealToggle shown={showKey} onToggle={() => setShowKey((v) => !v)} />}
             >
               <Input
                 id="apiKey"
@@ -360,6 +379,33 @@ export default function SettingsPanel({ initial, onSave, onClose }: Props) {
             </Field>
           </Section>
         )}
+
+        {/* Its own section, below whichever provider section is showing,
+            because search is not part of either: the model vendor and the
+            search vendor are different companies, and leaving this blank costs
+            the user nothing but a slightly noisier ladder. */}
+        <Section icon={Search} title={t('settings.sectionSearch')}>
+          <Field
+            label={t('settings.searchKey')}
+            hint={t('settings.searchKeyHint')}
+            htmlFor="firecrawlApiKey"
+            badge={t('settings.optional')}
+            trailing={
+              <RevealToggle shown={showSearchKey} onToggle={() => setShowSearchKey((v) => !v)} />
+            }
+          >
+            <Input
+              id="firecrawlApiKey"
+              type={showSearchKey ? 'text' : 'password'}
+              autoComplete="off"
+              spellCheck={false}
+              placeholder="fc-…"
+              value={firecrawlApiKey}
+              onChange={(e) => setFirecrawlApiKey(e.target.value)}
+              className="font-mono text-[12px] tracking-tight"
+            />
+          </Field>
+        </Section>
 
         {/* A link, not a segmented control: the way back to the main path, and
             the way off it, should both cost one click and neither should look

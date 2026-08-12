@@ -46,11 +46,75 @@ API key. It defaults to DeepSeek (`deepseek-v4-flash`), so a key is the only
 thing you have to supply; OpenAI, Anthropic and any OpenAI-compatible endpoint
 are in the same dropdown.
 
+### The development extension id
+
+Every non-store build carries a fixed `key` in its manifest, so the unpacked
+extension always installs as:
+
+```
+mcandaiakmaohgjcfmfihgollgnpghfd
+```
+
+Without that key Chrome derives an unpacked id from the absolute path the
+folder was loaded from — it changes when the folder moves, on a second
+checkout, on another machine, and even between `/Users/me/Project/…` and
+`/Users/me/project/…`. Since the sign-in page has to name the id to hand a
+session back, a drifting id shows up as *"its id isn't one this site knows"* at
+the end of an otherwise successful sign-in.
+
+The sign-in page has to name an id because `chrome.runtime.sendMessage` from a
+web page cannot broadcast, so both ids are listed in
+[`cloud/lib/deliver-session.ts`](cloud/lib/deliver-session.ts), which tries each
+in turn. That list is addressing, not a security boundary —
+`externally_connectable` in the manifest is what decides who may message the
+extension, and it is enforced by Chrome.
+
+### Working on sign-in locally
+
+A development build points at a local `cloud/` (`http://localhost:3000/api/v1`)
+and lists `http://localhost/*` under both `host_permissions` and
+`externally_connectable`, so the whole round trip runs without deploying:
+
+```bash
+npm run dev                 # the extension (writes dist/) and cloud/ together
+```
+
+One Ctrl-C stops both, and either falling over takes the other with it rather
+than leaving half a stack up. A `cloud/` dev server that is already running is
+adopted rather than fought over — Next refuses to start a second one for the
+same directory, and losing both halves to that would be a poor trade. Use
+`npm run dev:ext` for the extension alone.
+
+Then **reload the extension** at `chrome://extensions`. That step is the one
+that bites: `dist/` is whatever was built last, so a stray `npm run build`
+leaves a *production* bundle there, pointing at `https://pagehand.app`. The
+emailed link then comes back to production, because it is production that
+issued it — `send-link` derives the return URL from the origin it was called
+on. If a link points somewhere unexpected, check which build is loaded before
+anything else.
+
+Both localhost entries are dropped from the store build, which has no business
+reaching a developer's machine.
+
+One detail worth keeping: the pattern is `http://localhost/*`, without a port.
+Match patterns have no concept of a port, so `http://localhost:3000/*` is
+accepted into the manifest and then matches nothing at all.
+
+Only the public half of the key is committed; it fixes the id and nothing else.
+The private half (`dev-key.pem`, gitignored) is needed only to hand-sign a
+`.crx`, which this project never does. To use your own key instead, set
+`PAGEHAND_DEV_KEY` to its base64 public key — and put the resulting id in the
+allowlists.
+
 ## Packaging for the Chrome Web Store
 
 ```bash
 npm run pack     # production build + zip → pagehand.zip
 ```
+
+`pack` sets `PAGEHAND_STORE_BUILD=true`, which drops the development `key` from
+the manifest: the store assigns its own id, and an upload carrying a key that
+isn't the listing's is rejected. Build any other way and the key is present.
 
 Upload `pagehand.zip` at [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole).
 Privacy policy: hosted on the marketing site under `/privacy`.

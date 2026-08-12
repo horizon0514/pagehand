@@ -1,6 +1,6 @@
 {
   "name": "pagehand",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "private": true,
   "description": "Pagehand — AI that reads and automates the current tab via the Chrome DevTools Protocol.",
   "homepage": "https://pagehand.app",
@@ -10,9 +10,10 @@
   },
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "node scripts/dev.mjs",
+    "dev:ext": "vite",
     "build": "tsc --noEmit && vite build",
-    "pack": "npm run build && rm -f pagehand.zip && cd dist && zip -r ../pagehand.zip .",
+    "pack": "PAGEHAND_STORE_BUILD=true npm run build && rm -f pagehand.zip && cd dist && zip -r ../pagehand.zip .",
     "store:shots": "node store/render-screenshots.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src e2e",

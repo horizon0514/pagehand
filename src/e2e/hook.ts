@@ -1,6 +1,14 @@
 import { sessionRegistry } from '../lib/debugger-bridge/sessionRegistry';
 import { tools } from '../lib/tools';
 import { activateLedger, getActiveLedger } from '../lib/ledger/activeLedger';
+import {
+  deleteTask,
+  loadTasks,
+  runExportTask,
+  saveTask,
+  taskFromExtraction,
+  type ExportTask,
+} from '../lib/tasks/exportTasks';
 // Only the side panel ever loads this module (see sidepanel/main.tsx), so
 // reaching into its store here is safe — and it is the only place the tool-call
 // sequence of a real agent turn exists in one piece.
@@ -66,6 +74,27 @@ export function installExposedTestApi(): void {
       ledger: {
         activate: (threadId: string) => activateLedger(threadId),
         get: () => getActiveLedger(),
+      },
+
+      // Saved exports. saveCurrent mirrors what LedgerPanel's save button does,
+      // so the test exercises the path the user has rather than one built for it.
+      tasks: {
+        list: () => loadTasks(),
+        remove: (id: string) => deleteTask(id),
+        run: (task: ExportTask) => runExportTask(task),
+        saveCurrent: (name: string) => {
+          const ledger = getActiveLedger();
+          if (!ledger?.extraction) throw new Error('The active ledger has no extraction to save.');
+          return saveTask(
+            taskFromExtraction(
+              name,
+              ledger.extraction.url,
+              ledger.extraction.schema,
+              ledger.findings.length,
+              ledger.findings.map((f) => f.key),
+            ),
+          );
+        },
       },
     },
   });
