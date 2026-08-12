@@ -1,6 +1,6 @@
 {
   "name": "pagehand",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "private": true,
   "description": "Pagehand — AI that reads and automates the current tab via the Chrome DevTools Protocol.",
   "homepage": "https://pagehand.app",
