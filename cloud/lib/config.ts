@@ -42,3 +42,17 @@ export function routerApiKey(): string {
   if (!key) throw new Error('OPENROUTER_API_KEY is not set');
   return key;
 }
+
+/** Firecrawl's search API — JSON results instead of a scraped results page. */
+export const FIRECRAWL_SEARCH_URL = 'https://api.firecrawl.dev/v2/search';
+
+/**
+ * Optional, unlike the router key. Hosted search is an upgrade over the
+ * extension's keyless Bing path, not a dependency of it: with this unset the
+ * endpoint answers 503 and every client falls back on its own.
+ */
+export function firecrawlApiKey(): string {
+  const key = process.env.FIRECRAWL_API_KEY?.trim();
+  if (!key) throw new Error('FIRECRAWL_API_KEY is not set');
+  return key;
+}
