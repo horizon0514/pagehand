@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import type { Page } from '@playwright/test';
 import { test, expect } from '../extension';
 import { loadDatasetSync } from './dataset.ts';
 import { loadSample, resolveSample } from './sample.ts';
@@ -64,6 +65,24 @@ function startUrl(website: string): string {
   return /^https?:\/\//i.test(website) ? website : `https://${website}`;
 }
 
+/**
+ * Navigates to the task's start URL, retrying once. Returns null on success, or
+ * the error message when the site never served a page (`ERR_HTTP2_PROTOCOL_ERROR`
+ * and friends). A 403 bot wall is *not* a dead site: it loads, so the agent runs
+ * and the outcome is judged — only a failed navigation lands here.
+ */
+async function gotoStartSite(target: Page, url: string): Promise<string | null> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      await target.goto(url, { waitUntil: 'domcontentloaded', timeout: 120_000 });
+      return null;
+    } catch (error) {
+      if (attempt === 1) return error instanceof Error ? error.message.split('\n')[0] : String(error);
+    }
+  }
+  return null;
+}
+
 const sample = loadSample();
 const dataset = loadDatasetSync();
 const tasks = resolveSample(sample, dataset.tasks).filter(
@@ -80,6 +99,10 @@ for (const task of tasks) {
   test(`[${task.tier}] ${task.task_id}`, async ({ context, panel }) => {
     const dir = path.join(OUT_DIR, task.task_id);
     test.skip(RESUME && fs.existsSync(path.join(dir, 'result.json')), 'already has a result.json');
+    test.skip(
+      RESUME && fs.existsSync(path.join(dir, 'not-executable.json')),
+      'start site already recorded as not executable',
+    );
     test.setTimeout(TASK_TIMEOUT_MS + 120_000);
 
     await panel.evaluate(
@@ -94,7 +117,38 @@ for (const task of tasks) {
     // Straight to the task's real start URL: about:blank and chrome:// pages
     // reject debugger attachment.
     const target = await context.newPage();
-    await target.goto(startUrl(task.website), { waitUntil: 'domcontentloaded', timeout: 120_000 });
+    const deadSite = await gotoStartSite(target, startUrl(task.website));
+    if (deadSite) {
+      // A start site that never serves a page is an environment failure, not an
+      // agent failure. Recording it keeps it out of the judged denominator
+      // instead of crashing the task with no artefact at all.
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(
+        path.join(dir, 'not-executable.json'),
+        `${JSON.stringify(
+          {
+            task_id: task.task_id,
+            website: task.website,
+            reason: 'start site did not load',
+            error: deadSite,
+            at: new Date().toISOString(),
+          },
+          null,
+          2,
+        )}\n`,
+      );
+      appendRunSummary({
+        task_id: task.task_id,
+        tier: task.tier,
+        website: task.website,
+        dataset_sha: sample.dataset_sha,
+        not_executable: true,
+        error: deadSite,
+        finished_at: new Date().toISOString(),
+      });
+      console.log(`[bench] ${task.task_id} (${task.tier}): not executable — ${deadSite}`);
+      test.skip(true, `start site did not load: ${deadSite}`);
+    }
 
     const tabId = await panel.evaluate(async (url) => {
       const tabs = await chrome.tabs.query({});

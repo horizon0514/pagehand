@@ -2,8 +2,10 @@ export interface AXNode {
   nodeId: string;
   ignored: boolean;
   role?: { type: string; value: string };
-  name?: { type: string; value: string };
-  value?: { type: string; value: string };
+  // CDP's AXValue.value is untyped: numeric roles (spinbutton, slider, the
+  // price/range filters retail sites use) send a number, not a string.
+  name?: { type: string; value: unknown };
+  value?: { type: string; value: unknown };
   childIds?: string[];
   backendDOMNodeId?: number;
   parentId?: string;
@@ -16,9 +18,19 @@ const MAX_LINES = 1500;
  * model like deepseek-chat, which one unbounded snapshot could exhaust. */
 const MAX_CHARS = 40_000;
 
-function truncate(text: string): string {
-  const collapsed = text.replace(/\s+/g, ' ').trim();
+/** Coerces whatever CDP sent (string, number, boolean) into a display string. */
+function truncate(text: unknown): string {
+  const collapsed = String(text).replace(/\s+/g, ' ').trim();
   return collapsed.length > MAX_TEXT_LEN ? `${collapsed.slice(0, MAX_TEXT_LEN)}…` : collapsed;
+}
+
+/** `0` and `false` are real values on a spinbutton or a checkbox, so emptiness
+ * is decided after coercion rather than by truthiness of the raw value. */
+function render(label: '' | 'value', raw: unknown): string {
+  if (raw === undefined || raw === null) return '';
+  const text = truncate(raw);
+  if (text === '') return '';
+  return label === '' ? ` "${text}"` : ` ${label}="${text}"`;
 }
 
 /** Filters AX-tree noise down to elements worth showing the model: anything
@@ -67,8 +79,8 @@ export function formatSnapshot(
       const uid = register(node.backendDOMNodeId!);
       uidCount += 1;
       const role = node.role?.value ?? 'unknown';
-      const name = node.name?.value ? ` "${truncate(node.name.value)}"` : '';
-      const value = node.value?.value ? ` value="${truncate(node.value.value)}"` : '';
+      const name = render('', node.name?.value);
+      const value = render('value', node.value?.value);
       const line = `${'  '.repeat(depth)}${role}${name}${value} [uid=${uid}]`;
       lines.push(line);
       chars += line.length + 1;

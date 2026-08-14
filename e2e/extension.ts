@@ -120,7 +120,7 @@ export const test = base.extend<ExtensionFixtures>({
     const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pagehand-e2e-'));
     const context = await chromium.launchPersistentContext(userDataDir, {
       channel: 'chromium',
-      args: [`--disable-extensions-except=${DIST}`, `--load-extension=${DIST}`],
+      args: [`--disable-extensions-except=${DIST}`, `--load-extension=${DIST}`, ...proxyArgs()],
     });
 
     await use(context);
@@ -163,6 +163,33 @@ export const test = base.extend<ExtensionFixtures>({
 
 function port(): number {
   return Number(process.env.E2E_PORT ?? 5599);
+}
+
+/**
+ * Opt-in egress proxy for benchmark runs against live sites (`BENCH_PROXY`,
+ * e.g. `http://127.0.0.1:7890`). Off by default, so fixture E2E is unaffected;
+ * localhost is always bypassed so the fixture server stays reachable when it
+ * is on.
+ *
+ * `BENCH_PROXY_BYPASS` (comma-separated hosts) additionally routes those hosts
+ * direct. Put the model API here: page traffic can saturate the proxy and a
+ * mid-turn `network error` from the LLM endpoint kills the whole task, so the
+ * model API must never share a contended egress with the pages under test.
+ */
+function proxyArgs(): string[] {
+  const proxy = process.env.BENCH_PROXY?.trim();
+  if (!proxy) return [];
+
+  const bypass = ['localhost', '127.0.0.1', '<-loopback>']
+    .concat(
+      (process.env.BENCH_PROXY_BYPASS ?? '')
+        .split(',')
+        .map((host) => host.trim())
+        .filter(Boolean),
+    )
+    .join(',');
+
+  return [`--proxy-server=${proxy}`, `--proxy-bypass-list=${bypass}`];
 }
 
 /** Invoke a tool in the extension exactly as the agent loop would. */

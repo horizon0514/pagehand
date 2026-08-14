@@ -47,6 +47,17 @@ describe('parseKeyCombo', () => {
     expect(descriptor.text).toBe('+');
   });
 
+  it('treats a literal space as the Space key, not as an empty combo', () => {
+    // typeText() parses one character at a time, so trimming a bare " " away
+    // made every multi-word type_text fail with `Unsupported key ""`.
+    expect(parseKeyCombo(' ').descriptor).toMatchObject({
+      key: ' ',
+      code: 'Space',
+      windowsVirtualKeyCode: 32,
+      text: ' ',
+    });
+  });
+
   it('maps digits to DigitN codes (not KeyN)', () => {
     expect(parseKeyCombo('5').descriptor).toMatchObject({
       key: '5',

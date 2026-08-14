@@ -1,7 +1,9 @@
 # Online-Mind2Web benchmark driver
 
-> Status: **driver built and verified offline; no benchmark run has happened yet.**
-> The full run needs three credentials (§1) and costs real money and hours (§5).
+> Status: **driver exercised end to end on a 30-task sample run.** The knobs in
+> §2 and the caveats in §5 come from that run. No leaderboard number exists: that
+> needs all 300 tasks averaged over three runs.
+> A run needs three credentials (§1) and costs real money and hours (§5).
 
 Runs Pagehand's agent against a pinned 30-task sample of
 [Online-Mind2Web](https://github.com/OSU-NLP-Group/Online-Mind2Web), records one
@@ -26,8 +28,8 @@ and is absent from a normal build — verified by grepping `npm run build` outpu
 
 ```bash
 # once: fetch the gated task list, then pin 30 tasks and commit the pin
-HF_TOKEN=hf_… npm run bench:om2w -- --fetch
-HF_TOKEN=hf_… npm run bench:om2w -- --sample     # writes e2e/benchmark/sample.json
+HF_TOKEN=hf_… NODE_USE_ENV_PROXY=1 npm run bench:om2w -- --fetch
+HF_TOKEN=hf_… NODE_USE_ENV_PROXY=1 npm run bench:om2w -- --sample     # writes e2e/benchmark/sample.json
 
 # the run itself
 PAGEHAND_PROVIDER=deepseek PAGEHAND_MODEL=deepseek-v4-flash PAGEHAND_API_KEY=sk-… \
@@ -44,11 +46,31 @@ Output per task, under `e2e/benchmark/out/<task_id>/` (gitignored):
 result.json          # the v2 submission — validated before the run moves on
 trajectory/0000.jpg  # one screenshot per step, captured before the action ran
 raw_trace.json       # everything v2 has no room for: tokens, timings, bookkeeping calls
+not-executable.json  # instead of the above, when the start site never served a page
 ```
+
+A start URL that fails to load is retried once and then recorded as
+`not-executable.json` plus a run-summary row, and the task is skipped — an
+environment failure, kept out of the judged denominator rather than crashing the
+task with no artefact. (A 403 bot wall is *not* this case: it loads, so the agent
+runs and the result is judged. Read those apart from agent failures.)
 
 Knobs: `BENCH_SEED`, `BENCH_SPLIT` (default `8/14/8`, proportional to the
 83/143/74 population), `BENCH_TASK_TIMEOUT_MS` (default 15 min),
 `BENCH_ALLOW_SEARCH=1`, `BENCH_WORKERS` (default 1, see §5).
+
+### Network
+
+Two environment facts bit a real run and neither has an obvious error message:
+
+| | |
+|---|---|
+| `NODE_USE_ENV_PROXY=1` | Node's `undici` `fetch` ignores `HTTP_PROXY`/`HTTPS_PROXY`, so `--fetch`/`--sample` fail with a bare `fetch failed` wherever huggingface.co needs a proxy. The token is fine; the message misleads. Node ≥24 |
+| `BENCH_PROXY` / `BENCH_PROXY_BYPASS` | route the browser's page traffic through an egress proxy (`BENCH_PROXY=http://127.0.0.1:7890`). Off by default; localhost is always bypassed, so fixture E2E is unaffected. **Put the model API host in `BENCH_PROXY_BYPASS`** (e.g. `api.deepseek.com`): page traffic saturates the proxy, and a mid-turn network error from the LLM endpoint kills the whole task |
+
+Live sites can be hard-blocked (403/503) from a given egress — measure
+reachability before a run and report reachable-site results alongside the
+headline, or the number describes the network as much as the agent.
 
 ## 3. How it works
 
@@ -83,6 +105,20 @@ python ./src/run.py --mode WebJudge_Online_Mind2Web_eval --model o4-mini \
   --trajectories_dir e2e/benchmark/out --api_key $OPENROUTER_API_KEY \
   --output_path e2e/benchmark/out_result --num_worker 1 --score_threshold 3
 ```
+
+Three upstream-repo snags, all outside Pagehand and all hit with `o4-mini`:
+
+- **`max_tokens` defaults to 512**, which a reasoning model spends on reasoning
+  tokens: `judge_image` then gets truncated or empty text, every image scores 0
+  through the `except` path, and the judgment silently degenerates to text-only.
+  Raise it (≈4096) before trusting a score. Note also that the o-series rejects
+  `max_tokens` in favour of `max_completion_tokens`, so the repo as published
+  cannot run `o4-mini` against OpenAI directly.
+- **macOS `spawn` can't pickle the client**: `parallel_eval` hands each worker an
+  engine holding an `RLock`. Fine under Linux `fork`; set the start method (or
+  run with `--num_worker 1`) on macOS.
+- A `--model` containing a slash (`openai/o4-mini`) makes the output filename
+  nest a directory — pre-create it to avoid `FileNotFoundError`.
 
 `npm run bench:om2w -- --score` prints a **local heuristic** instead — completion
 rate, step-limit rate, failed-action rate, steps against the human reference.

@@ -59,5 +59,7 @@ export async function typeText(
     if (descriptor.text) await dispatchKey(cdp, 'char', descriptor);
     await dispatchKey(cdp, 'keyUp', descriptor);
   }
-  if (submitKey) await pressKeyCombo(cdp, submitKey);
+  // Models routinely pass submitKey: "" to mean "don't submit"; treat it as
+  // absent rather than letting it reach the parser as an unsupported key.
+  if (submitKey !== undefined && submitKey !== '') await pressKeyCombo(cdp, submitKey);
 }
