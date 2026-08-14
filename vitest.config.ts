@@ -5,8 +5,10 @@ import { defineConfig } from 'vitest/config';
 // (those are *.spec.ts and belong to the Playwright runner).
 export default defineConfig({
   test: {
-    include: ['src/**/*.test.ts'],
-    exclude: ['e2e/**', 'dist/**', 'node_modules/**'],
+    // e2e/benchmark holds pure Node modules (the v2 writer, the validator) whose
+    // tests need no browser; the Playwright specs beside them stay excluded.
+    include: ['src/**/*.test.ts', 'e2e/benchmark/**/*.test.ts'],
+    exclude: ['e2e/**/*.spec.ts', 'dist/**', 'node_modules/**'],
     setupFiles: ['src/test/setup.ts'],
   },
 });

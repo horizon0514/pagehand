@@ -20,7 +20,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build:e2e": "VITE_E2E=true vite build",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "bench:om2w": "node scripts/benchmark.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^4.0.0",

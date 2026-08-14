@@ -12,6 +12,9 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
+    // e2e/benchmark modules are also run directly by Node (type stripping), which
+    // resolves the specifier verbatim — so those imports carry a .ts extension.
+    "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "noEmit": true,
     "types": ["chrome", "vite/client", "node"],
@@ -20,5 +23,11 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src", "e2e", "playwright.config.ts", "vitest.config.ts"]
+  "include": [
+    "src",
+    "e2e",
+    "playwright.config.ts",
+    "playwright.bench.config.ts",
+    "vitest.config.ts"
+  ]
 }
