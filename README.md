@@ -191,6 +191,8 @@ You can remove the unused GitHub secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and
 - `npm run lint` — ESLint
 - `npm test` / `npm run test:watch` — Vitest (unit)
 - `npm run build:e2e && npm run test:e2e` — Playwright (end-to-end)
+- `npm run bench:om2w` — Online-Mind2Web benchmark (needs keys, see
+  [`docs/BENCHMARK-om2w.md`](docs/BENCHMARK-om2w.md))
 - `npm run build` — production build to `dist/`
 
 ### Testing

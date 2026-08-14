@@ -2,6 +2,12 @@ import { test as base, chromium, type BrowserContext, type Page } from '@playwri
 import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs';
+import type {
+  BenchCapture,
+  BenchRunOptions,
+  BenchRunResult,
+  BenchStep,
+} from '../src/e2e/bench/recorder';
 
 const DIST = path.resolve(import.meta.dirname, '..', 'dist');
 
@@ -37,6 +43,18 @@ export interface Transcript {
   messages: TranscriptMessage[];
 }
 
+/** The Online-Mind2Web recorder — see src/e2e/bench/recorder.ts. */
+export interface BenchTestApi {
+  install(options?: { allowSearch?: boolean }): void;
+  uninstall(): void;
+  reset(): void;
+  steps(): BenchStep[];
+  capture(): Promise<BenchCapture>;
+  run(options: BenchRunOptions): Promise<BenchRunResult>;
+}
+
+export type { BenchCapture, BenchRunOptions, BenchRunResult, BenchStep };
+
 export interface CdpTestApi {
   attach(tabId: number): Promise<unknown>;
   detach(): Promise<void>;
@@ -44,6 +62,7 @@ export interface CdpTestApi {
   call(name: string, args?: unknown): Promise<unknown>;
   toolNames(): string[];
   transcript(): Transcript;
+  bench: BenchTestApi;
   ledger: {
     activate(threadId: string): Promise<StoredLedger>;
     get(): StoredLedger | null;

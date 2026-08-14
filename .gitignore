@@ -24,4 +24,9 @@ test-results/
 playwright-report/
 blob-report/
 .playwright/
+
+# Benchmark working files: the gated dataset cache and per-task trajectories
+# (megabytes of screenshots). The pinned sample.json is committed.
+e2e/benchmark/.cache/
+e2e/benchmark/out/
 .vercel/

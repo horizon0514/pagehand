@@ -13,6 +13,7 @@ import {
 // reaching into its store here is safe — and it is the only place the tool-call
 // sequence of a real agent turn exists in one piece.
 import { useConversationStore } from '../sidepanel/state/conversationStore';
+import { bench } from './bench/recorder';
 
 /**
  * Test-only bridge. Playwright can load this page (an extension page, so it has
@@ -46,6 +47,12 @@ export function installExposedTestApi(): void {
       },
 
       toolNames: () => Object.keys(tools),
+
+      // Online-Mind2Web benchmark driver: records one v2 trajectory per agent
+      // turn. Lives here rather than in e2e/ because recording every tool call
+      // — including the ones that throw — is only possible from inside the
+      // extension process. See bench/recorder.ts.
+      bench,
 
       /**
        * The transcript of the current thread, reduced to what a measurement
