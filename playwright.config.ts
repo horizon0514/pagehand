@@ -10,6 +10,10 @@ export default defineConfig({
   // The benchmark driver has its own config (playwright.bench.config.ts): it
   // spends real money on live sites and must never run as part of the suite.
   testIgnore: '**/benchmark/**',
+  // Only the browser specs: pure Node helpers beside them (e2e/proxy.ts and
+  // friends) are tested as *.test.ts under Vitest, and Playwright's default
+  // testMatch would claim those too.
+  testMatch: '**/*.spec.ts',
   // Extensions live in a single shared browser profile and this extension
   // deliberately allows only one debugger attachment at a time, so tests must
   // not run concurrently.

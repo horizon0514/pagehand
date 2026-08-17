@@ -29,4 +29,5 @@ blob-report/
 # (megabytes of screenshots). The pinned sample.json is committed.
 e2e/benchmark/.cache/
 e2e/benchmark/out/
+e2e/benchmark/not-executable/
 .vercel/

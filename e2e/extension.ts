@@ -2,6 +2,7 @@ import { test as base, chromium, type BrowserContext, type Page } from '@playwri
 import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs';
+import { proxyArgs } from './proxy.ts';
 import type {
   BenchCapture,
   BenchRunOptions,
@@ -120,7 +121,7 @@ export const test = base.extend<ExtensionFixtures>({
     const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pagehand-e2e-'));
     const context = await chromium.launchPersistentContext(userDataDir, {
       channel: 'chromium',
-      args: [`--disable-extensions-except=${DIST}`, `--load-extension=${DIST}`],
+      args: [`--disable-extensions-except=${DIST}`, `--load-extension=${DIST}`, ...proxyArgs()],
     });
 
     await use(context);

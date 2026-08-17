@@ -104,6 +104,59 @@ describe('formatSnapshot', () => {
     expect(text).not.toContain('x'.repeat(200));
   });
 
+  // CDP's AXValue.value is untyped and arrives as a number for spinbutton /
+  // slider / price-filter nodes, which used to throw `e.replace is not a
+  // function` and blind the agent for that step.
+  it('renders numeric AX names and values instead of crashing', () => {
+    const { register } = makeRegister();
+    const nodes = tree([
+      node({
+        nodeId: '1',
+        role: { type: 'role', value: 'spinbutton' },
+        name: { type: 'n', value: 1200 } as unknown as AXNode['name'],
+        value: { type: 'v', value: 350.5 } as unknown as AXNode['value'],
+      }),
+    ]);
+
+    const { text } = formatSnapshot(nodes, register);
+
+    expect(text).toContain('spinbutton "1200" value="350.5"');
+  });
+
+  it('keeps 0 and false, which are real values on a spinbutton or checkbox', () => {
+    const { register } = makeRegister();
+    const nodes = tree([
+      node({
+        nodeId: '1',
+        role: { type: 'role', value: 'slider' },
+        value: { type: 'v', value: 0 } as unknown as AXNode['value'],
+      }),
+      node({
+        nodeId: '2',
+        role: { type: 'role', value: 'checkbox' },
+        value: { type: 'v', value: false } as unknown as AXNode['value'],
+      }),
+    ]);
+
+    const { text } = formatSnapshot(nodes, register);
+
+    expect(text).toContain('slider value="0"');
+    expect(text).toContain('checkbox value="false"');
+  });
+
+  it('omits a name that is absent or empty after coercion', () => {
+    const { register } = makeRegister();
+    const nodes = tree([
+      node({ nodeId: '1', name: { type: 'n', value: '   ' } }),
+      node({ nodeId: '2', name: { type: 'n', value: null } as unknown as AXNode['name'] }),
+    ]);
+
+    const { text } = formatSnapshot(nodes, register);
+
+    expect(text).not.toContain('""');
+    expect(text).not.toContain('null');
+  });
+
   it('collapses whitespace in names', () => {
     const { register } = makeRegister();
     const nodes = tree([node({ nodeId: '1', name: { type: 'n', value: '  a \n\n  b  ' } })]);

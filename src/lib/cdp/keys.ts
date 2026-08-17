@@ -20,6 +20,7 @@ const NAMED_KEYS: Record<string, KeyDescriptor> = {
   PageUp: { key: 'PageUp', code: 'PageUp', windowsVirtualKeyCode: 33 },
   PageDown: { key: 'PageDown', code: 'PageDown', windowsVirtualKeyCode: 34 },
   Space: { key: ' ', code: 'Space', windowsVirtualKeyCode: 32, text: ' ' },
+  ' ': { key: ' ', code: 'Space', windowsVirtualKeyCode: 32, text: ' ' },
 };
 
 const MODIFIER_BITS: Record<string, number> = {
@@ -50,8 +51,11 @@ export function parseKeyCombo(combo: string): ParsedKeyCombo {
 
   // '+' doubles as the separator and a legitimate key ("Control++"), so a
   // naive split on '+' would read the key as an empty modifier.
-  if (combo === '+') {
-    keyPart = '+';
+  // A single character is always the key itself, never a combo. Splitting and
+  // trimming first would eat a literal space — which typeText() feeds through
+  // here one character at a time, so `type_text` could not type a space at all.
+  if (combo.length === 1) {
+    keyPart = combo;
     modifierParts = [];
   } else if (combo.endsWith('++')) {
     keyPart = '+';
