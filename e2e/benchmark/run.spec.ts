@@ -5,6 +5,7 @@ import { test, expect } from '../extension';
 import { loadDatasetSync } from './dataset.ts';
 import { loadSample, resolveSample } from './sample.ts';
 import { writeSubmission } from './v2.ts';
+import { clearNotExecutable, isNotExecutable, writeNotExecutable } from './notExecutable.ts';
 import { validateSubmission } from './validate.ts';
 import type { BenchRunResult } from '../../src/e2e/bench/recorder.ts';
 
@@ -100,7 +101,7 @@ for (const task of tasks) {
     const dir = path.join(OUT_DIR, task.task_id);
     test.skip(RESUME && fs.existsSync(path.join(dir, 'result.json')), 'already has a result.json');
     test.skip(
-      RESUME && fs.existsSync(path.join(dir, 'not-executable.json')),
+      RESUME && isNotExecutable(task.task_id),
       'start site already recorded as not executable',
     );
     test.setTimeout(TASK_TIMEOUT_MS + 120_000);
@@ -121,22 +122,16 @@ for (const task of tasks) {
     if (deadSite) {
       // A start site that never serves a page is an environment failure, not an
       // agent failure. Recording it keeps it out of the judged denominator
-      // instead of crashing the task with no artefact at all.
-      fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(
-        path.join(dir, 'not-executable.json'),
-        `${JSON.stringify(
-          {
-            task_id: task.task_id,
-            website: task.website,
-            reason: 'start site did not load',
-            error: deadSite,
-            at: new Date().toISOString(),
-          },
-          null,
-          2,
-        )}\n`,
-      );
+      // instead of crashing the task with no artefact at all — and the record
+      // goes beside out/, never inside it, so WebJudge never sees a task folder
+      // with no trajectory in it.
+      writeNotExecutable({
+        task_id: task.task_id,
+        website: task.website,
+        reason: 'start site did not load',
+        error: deadSite,
+        at: new Date().toISOString(),
+      });
       appendRunSummary({
         task_id: task.task_id,
         tier: task.tier,
@@ -171,6 +166,10 @@ for (const task of tasks) {
         allowSearch: ALLOW_SEARCH,
       },
     );
+
+    // The site served a page this time; a record from an earlier run would
+    // otherwise keep skipping this task on every future --resume.
+    clearNotExecutable(task.task_id);
 
     fs.mkdirSync(dir, { recursive: true });
     const submission = writeSubmission(dir, {

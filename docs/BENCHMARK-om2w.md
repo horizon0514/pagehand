@@ -36,7 +36,7 @@ PAGEHAND_PROVIDER=deepseek PAGEHAND_MODEL=deepseek-v4-flash PAGEHAND_API_KEY=sk-
   npm run bench:om2w
 
 npm run bench:om2w -- --tasks <task_id>          # one task
-npm run bench:om2w -- --resume                   # skip tasks that already have a result.json
+npm run bench:om2w -- --resume                   # skip tasks with a result.json or a not-executable record
 npm run bench:om2w -- --score                    # re-print the local heuristic over out/
 ```
 
@@ -46,14 +46,21 @@ Output per task, under `e2e/benchmark/out/<task_id>/` (gitignored):
 result.json          # the v2 submission — validated before the run moves on
 trajectory/0000.jpg  # one screenshot per step, captured before the action ran
 raw_trace.json       # everything v2 has no room for: tokens, timings, bookkeeping calls
-not-executable.json  # instead of the above, when the start site never served a page
 ```
 
 A start URL that fails to load is retried once and then recorded as
-`not-executable.json` plus a run-summary row, and the task is skipped — an
-environment failure, kept out of the judged denominator rather than crashing the
-task with no artefact. (A 403 bot wall is *not* this case: it loads, so the agent
-runs and the result is judged. Read those apart from agent failures.)
+`e2e/benchmark/not-executable/<task_id>.json` plus a run-summary row, and the
+task is skipped — an environment failure, kept out of the judged denominator
+rather than crashing the task with no artefact. (A 403 bot wall is *not* this
+case: it loads, so the agent runs and the result is judged. Read those apart from
+agent failures.)
+
+That record sits **beside** `out/`, never inside it: `out/` is handed to WebJudge
+as `--trajectories_dir` and every subdirectory under it is scored as a judged
+trajectory, so a task folder holding only the diagnostic would be counted as a
+failure — the opposite of what recording it is for. `--resume` skips a task with
+such a record, and the record is deleted the moment the same task's start site
+does serve a page, so a site that was down yesterday is not skipped forever.
 
 Knobs: `BENCH_SEED`, `BENCH_SPLIT` (default `8/14/8`, proportional to the
 83/143/74 population), `BENCH_TASK_TIMEOUT_MS` (default 15 min),
@@ -66,7 +73,7 @@ Two environment facts bit a real run and neither has an obvious error message:
 | | |
 |---|---|
 | `NODE_USE_ENV_PROXY=1` | Node's `undici` `fetch` ignores `HTTP_PROXY`/`HTTPS_PROXY`, so `--fetch`/`--sample` fail with a bare `fetch failed` wherever huggingface.co needs a proxy. The token is fine; the message misleads. Node ≥24 |
-| `BENCH_PROXY` / `BENCH_PROXY_BYPASS` | route the browser's page traffic through an egress proxy (`BENCH_PROXY=http://127.0.0.1:7890`). Off by default; localhost is always bypassed, so fixture E2E is unaffected. **Put the model API host in `BENCH_PROXY_BYPASS`** (e.g. `api.deepseek.com`): page traffic saturates the proxy, and a mid-turn network error from the LLM endpoint kills the whole task |
+| `BENCH_PROXY` / `BENCH_PROXY_BYPASS` | route the browser's page traffic through an egress proxy (`BENCH_PROXY=http://127.0.0.1:7890`). Off by default; loopback (`localhost`, `127.0.0.1`, `[::1]`) is always bypassed, so fixture E2E is unaffected — Chromium's `<-loopback>` subtraction is never emitted, and an operator-supplied one is ordered after those rules so it cannot shadow them. **Put the model API host in `BENCH_PROXY_BYPASS`** (e.g. `api.deepseek.com`): page traffic saturates the proxy, and a mid-turn network error from the LLM endpoint kills the whole task |
 
 Live sites can be hard-blocked (403/503) from a given egress — measure
 reachability before a run and report reachable-site results alongside the
